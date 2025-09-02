@@ -1,8 +1,14 @@
 import { API_ORIGIN } from '../api'
 import { useProducts } from '../context/ProductsContext'
+import { useCart } from '../context/CartContext'
+import { useAuth } from '../context/AuthContext'
+import { useNavigate } from 'react-router-dom'
 
 export default function Catalog() {
   const { products, loading, error, refresh } = useProducts()
+  const { add } = useCart()
+  const { token } = useAuth()
+  const nav = useNavigate()
 
   if (loading) return <p>Cargando…</p>
   if (error) return (
@@ -25,7 +31,18 @@ export default function Catalog() {
           )}
           <h3 style={{ marginTop: 8 }}>{p.name}</h3>
           <p style={{ opacity: 0.8 }}>{p.short_description}</p>
-          <strong>CHF {p.price.toFixed(2)}</strong>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <strong>CHF {p.price.toFixed(2)}</strong>
+            <button onClick={async () => {
+              try {
+                if (!token) { nav('/login'); return }
+                await add(p.id, 1)
+                alert('Añadido al carrito')
+              } catch {
+                alert('Error al añadir')
+              }
+            }}>Añadir</button>
+          </div>
         </article>
       ))}
     </div>
