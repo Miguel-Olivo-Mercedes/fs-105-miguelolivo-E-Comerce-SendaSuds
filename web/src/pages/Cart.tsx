@@ -1,47 +1,167 @@
-import { Link } from 'react-router-dom'
-import { API_ORIGIN } from '../api'
-import { useCart } from '../context/CartContext'
+import { Link, useNavigate } from "react-router-dom"
+import { useCart } from "../context/CartContext"
+import { useAuth } from "../context/AuthContext"
+import { API_ORIGIN } from "../api"
 
 export default function Cart() {
-  const { items, subtotal, loading, setQty, remove, clear } = useCart()
+  const { items, subtotal, totalQty, update, remove, clear, loading } = useCart()
+  const { token } = useAuth()
+  const navigate = useNavigate()
 
-  if (loading) return <p>Cargando carrito…</p>
-  if (!items.length) return (
-    <div>
-      <h2>Tu carrito está vacío</h2>
-      <Link to="/">Ir al catálogo</Link>
-    </div>
-  )
+  const handleCheckout = async () => {
+    if (!totalQty) return
+    if (!token) { navigate("/login", { state: { next: "/cart" } }); return }
+    alert("Checkout de ejemplo: conecta con tu /api/checkout cuando quieras.")
+  }
+
+  if (loading) return <div style={{ padding: 24 }}>Cargando carrito…</div>
 
   return (
-    <div>
-      <h2>Tu carrito</h2>
-      <ul style={{ listStyle: 'none', padding: 0, display: 'grid', gap: 12 }}>
-        {items.map(it => (
-          <li key={it.id} style={{ display: 'grid', gridTemplateColumns: '80px 1fr auto', gap: 12, alignItems: 'center', border: '1px solid #eee', borderRadius: 12, padding: 8 }}>
-            {it.product.image && <img src={`${API_ORIGIN}${it.product.image}`} alt={it.product.name} style={{ width: 80, height: 80, objectFit: 'cover', borderRadius: 8 }} />}
-            <div>
-              <strong>{it.product.name}</strong>
-              <div>CHF {it.product.price.toFixed(2)} ×
-                <input
-                  type="number" min={1} value={it.qty}
-                  onChange={e => setQty(it.id, Math.max(1, Number(e.target.value)||1))}
-                  style={{ width: 64, marginLeft: 8 }}
-                />
+    <div style={{ maxWidth: 1200, margin: "40px auto", padding: "0 16px", display: "grid", gridTemplateColumns: "1fr 380px", gap: 40 }}>
+      <div>
+        <h1 style={{ fontSize: 48, margin: "8px 0 24px" }}>Carrito</h1>
+        {items.length === 0 ? (
+          <>
+            <p style={{ fontWeight: 600 }}>TOTAL (0 Productos) 0,00 €</p>
+            <p style={{ color: "#555" }}>No hay más artículos en su carrito</p>
+
+            <Link to="/catalog" style={{ display: "inline-block", background: "#000", color: "#fff", padding: "18px 28px", letterSpacing: 2, marginTop: 16, textDecoration: "none" }}>
+              CONTINUAR COMPRANDO
+            </Link>
+
+            {/* PROMO debajo del botón */}
+            <div style={promoBox}>
+              <div style={{ fontWeight: 700, marginBottom: 4 }}>🎁 10% de descuento</div>
+              <div>
+                Hazte usuario y, además, recibe tu <strong>primer envío a coste cero</strong>.{" "}
+                <Link to="/register" style={{ textDecoration: "underline" }}>Crear cuenta</Link>
+                {" "}o{" "}
+                <Link to="/login" style={{ textDecoration: "underline" }}>Iniciar sesión</Link>.
               </div>
-              <div style={{ opacity: .7 }}>Subtotal ítem: CHF {it.line_total.toFixed(2)}</div>
             </div>
-            <button onClick={() => remove(it.id)} style={{ background: '#eee' }}>Eliminar</button>
-          </li>
-        ))}
-      </ul>
-      <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 16 }}>
-        <button onClick={clear} style={{ background: '#eee' }}>Vaciar carrito</button>
-        <strong>Total: CHF {subtotal.toFixed(2)}</strong>
+          </>
+        ) : (
+          <>
+            <p style={{ fontWeight: 600 }}>
+              TOTAL ({totalQty} {totalQty === 1 ? "Producto" : "Productos"}) {subtotal.toFixed(2)} €
+            </p>
+
+            <div style={{ marginTop: 12, display: "grid", gap: 16 }}>
+              {items.map((line) => (
+                <div key={line.product.id} style={{ display: "grid", gridTemplateColumns: "96px 1fr auto", alignItems: "center", gap: 16, padding: "12px 0", borderBottom: "1px solid #eee" }}>
+                  <img
+                    alt={line.product.name}
+                    src={`${API_ORIGIN}${line.product.image}`}
+                    style={{ width: 96, height: 96, objectFit: "cover", borderRadius: 8, background: "#f6f6f6" }}
+                  />
+                  <div>
+                    <div style={{ fontWeight: 600 }}>{line.product.name}</div>
+                    <div style={{ color: "#555", fontSize: 14 }}>{line.product.price.toFixed(2)} €</div>
+
+                    <div style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 8 }}>
+                      <button onClick={() => update(line.product.id, Math.max(0, line.qty - 1))} aria-label="decrementar" style={qtyBtn}>−</button>
+                      <span style={{ minWidth: 24, textAlign: "center" }}>{line.qty}</span>
+                      <button onClick={() => update(line.product.id, line.qty + 1)} aria-label="incrementar" style={qtyBtn}>+</button>
+                      <button onClick={() => remove(line.product.id)} style={{ marginLeft: 12, background: "none", border: "none", color: "#b00", cursor: "pointer" }}>
+                        Quitar
+                      </button>
+                    </div>
+                  </div>
+                  <div style={{ fontWeight: 600 }}>{(line.product.price * line.qty).toFixed(2)} €</div>
+                </div>
+              ))}
+            </div>
+
+            <div style={{ marginTop: 16 }}>
+              <button onClick={() => clear()} style={{ background: "none", border: "1px solid #ddd", padding: "10px 16px", cursor: "pointer" }}>
+                Vaciar carrito
+              </button>
+            </div>
+          </>
+        )}
       </div>
-      <div style={{ marginTop: 16 }}>
-        <button disabled>Continuar al pago (Stripe pronto)</button>
+
+      <div>
+        <h2 style={{ fontSize: 28, marginTop: 8, marginBottom: 16 }}>Resumen del pedido</h2>
+        <button
+          disabled={items.length === 0}
+          onClick={handleCheckout}
+          style={{ width: "100%", background: "#000", color: "#fff", padding: "18px 0", letterSpacing: 2,
+                   cursor: items.length ? "pointer" : "not-allowed", opacity: items.length ? 1 : 0.6 }}>
+          Tramitar Pedido
+        </button>
+
+        <div style={{ marginTop: 32 }}>
+          <h3 style={{ fontSize: 20, marginBottom: 8 }}>¿Necesitas ayuda?</h3>
+          <ul style={{ listStyle: "none", padding: 0, color: "#666", lineHeight: 1.9 }}>
+            <li>¿Cuándo llegará mi pedido?</li>
+            <li>¿Puedo devolver mi pedido?</li>
+            <li>¿Necesito una cuenta para hacer pedidos?</li>
+          </ul>
+        </div>
+
+        <div style={{ marginTop: 32 }}>
+          <div style={{ fontSize: 14, letterSpacing: 2, color: "#333", marginBottom: 12 }}>FORMAS DE PAGO</div>
+          <div style={{ display: "flex", gap: 16, alignItems: "center" }}>
+            <VisaIcon />
+            <MastercardIcon />
+            <PaypalIcon />
+          </div>
+        </div>
       </div>
     </div>
   )
+}
+
+/* ====== Iconos SVG (inline) ====== */
+
+function VisaIcon({ width = 64, height = 36 }: { width?: number; height?: number }) {
+  return (
+    <svg width={width} height={height} viewBox="0 0 64 36" aria-label="Visa" role="img">
+      <title>Visa</title>
+      <rect width="64" height="36" rx="6" fill="#1A1F71" />
+      <rect x="0" y="28" width="64" height="8" fill="#F7B600" />
+      <text x="10" y="23" fill="#fff" fontSize="16" fontWeight="700" fontFamily="system-ui, -apple-system, Segoe UI, Roboto, sans-serif">VISA</text>
+    </svg>
+  )
+}
+
+function MastercardIcon({ width = 64, height = 36 }: { width?: number; height?: number }) {
+  return (
+    <svg width={width} height={height} viewBox="0 0 64 36" aria-label="Mastercard" role="img">
+      <title>Mastercard</title>
+      <rect width="64" height="36" rx="6" fill="#fff" stroke="#ddd" />
+      <circle cx="26" cy="18" r="10" fill="#EB001B" />
+      <circle cx="38" cy="18" r="10" fill="#F79E1B" />
+      <rect x="30" y="9" width="4" height="18" fill="#FF5F00" />
+    </svg>
+  )
+}
+
+function PaypalIcon({ width = 64, height = 36 }: { width?: number; height?: number }) {
+  return (
+    <svg width={width} height={height} viewBox="0 0 64 36" aria-label="PayPal" role="img">
+      <title>PayPal</title>
+      <rect width="64" height="36" rx="6" fill="#fff" stroke="#ddd" />
+      <path d="M22 10h10c5 0 8 3 6 8-1 4-4 6-9 6h-6l-1 5h-5l4-19z" fill="#003087" />
+      <path d="M30 10h8c4 0 6 2 5 6-1 4-3 6-7 6h-7l1-5h5c2 0 3-1 4-3 .5-2-.3-4-3-4h-6l0-0z" fill="#009CDE" />
+    </svg>
+  )
+}
+
+/* ====== Estilos en JS ====== */
+
+const qtyBtn: React.CSSProperties = {
+  width: 28, height: 28, borderRadius: 6, border: "1px solid #ddd", background: "#fff",
+  cursor: "pointer", lineHeight: "26px", textAlign: "center", fontSize: 16,
+}
+
+const promoBox: React.CSSProperties = {
+  marginTop: 16,
+  padding: "14px 18px",
+  background: "#f7f7ff",
+  border: "1px solid #e6e6ff",
+  borderRadius: 10,
+  color: "#333",
+  maxWidth: 520
 }
