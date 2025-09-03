@@ -186,3 +186,24 @@ body { overflow-x: hidden; }     /* evita scroll horizontal por el 100vw del foo
 
 /* Empuja el <footer> hacia abajo cuando el contenido es corto */
 #root > footer { margin-top: auto; }
+/* Marca: icono + texto alineados */
+.brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  text-decoration: none;
+  color: inherit;
+}
+
+/* tamaño del sello en el header */
+.brand-logo {
+  width: 65px; 
+  height: 65px;
+  display: block;
+}
+
+/* ligero ajuste de tracking para el texto */
+.brand-text {
+  letter-spacing: .04em;
+  font-weight: 700; /* iguala con el resto del header si lo usas bold */
+}
