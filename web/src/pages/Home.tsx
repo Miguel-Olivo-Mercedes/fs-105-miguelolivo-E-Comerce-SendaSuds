@@ -1,51 +1,157 @@
-import { Link } from "react-router-dom";
-import { useProducts } from "../context/ProductsContext";
-import { API_ORIGIN } from "../api";
+import { useMemo, useState } from "react"
+import { cardColorsFor } from "../lib/cardPalette"
+import { useProducts } from "../context/ProductsContext"
+import { API_ORIGIN } from "../api"
+import { Link } from "react-router-dom"
 
 export default function Home() {
-  const { products, loading, error } = useProducts();
+  const { products, loading, error } = useProducts()
+  const [aboutOpen, setAboutOpen] = useState(false)
 
-  // Slugs destacados
-  const featuredSlugs = ["carbon-activo","citrico-amanecer","menta-alpina","rosa-mosqueta"];
-  const featured = products.filter(p => featuredSlugs.includes(p.slug)).slice(0, 4);
+  // Los cuatro destacados por slug o nombre (fallback)
+  const featured = useMemo(() => {
+    const want = new Set([
+      "carbon-activo",
+      "citrico-amanecer",
+      "menta-alpina",
+      "rosa-mosqueta",
+    ])
+    const bySlug = products.filter(p => p.slug && want.has(p.slug))
+    if (bySlug.length >= 4) return bySlug
 
-  if (loading) return <main style={{padding:24}}>Cargando…</main>;
-  if (error)   return <main style={{padding:24, color:"crimson"}}>Error: {String(error)}</main>;
+    // Fallback por nombre si por lo que sea cambió el slug
+    const names = new Set([
+      "Carbón Activo",
+      "Cítrico Amanecer",
+      "Menta Alpina",
+      "Rosa Mosqueta",
+    ])
+    const byName = products.filter(p => names.has(p.name))
+    return bySlug.length ? bySlug : byName
+  }, [products])
+
+  if (loading) return <div style={{ padding: 24 }}>Cargando…</div>
+  if (error)   return <div style={{ padding: 24, color: "crimson" }}>Error: {error}</div>
 
   return (
-    <main style={{maxWidth:1100, margin:"0 auto", padding:"24px 16px"}}>
-      <header style={{display:"flex", justifyContent:"space-between", alignItems:"center"}}>
-        <div>
-          <h1 style={{margin:"0 0 6px"}}>Senda Suds</h1>
-          <p style={{margin:0, color:"#555"}}>Jabones artesanales para rutinas sencillas.</p>
-        </div>
-        <Link to="/catalog" style={{textDecoration:"none", padding:"10px 14px", border:"1px solid #ddd", borderRadius:12}}>
-          Ver catálogo →
-        </Link>
-      </header>
+    <div style={{ padding: "24px 32px 48px" }}>
+      <h2 style={{ fontSize: 28, fontWeight: 700, margin: "8px 0 20px" }}>Destacados</h2>
 
-      <h2 style={{margin:"24px 0 12px"}}>Destacados</h2>
-      <div style={{
-        display:"grid",
-        gridTemplateColumns:"repeat(4, 1fr)",
-        gap:16
-      }}>
-        {featured.map(p => (
-          <Link key={p.id} to={`/product/${p.slug}`} style={{textDecoration:"none", color:"inherit"}}>
-            <article style={{border:"1px solid #eee", borderRadius:12, overflow:"hidden"}}>
-              <img
-                src={`${API_ORIGIN}${p.image}`}
-                alt={p.name}
-                style={{width:"100%", height:180, objectFit:"cover"}}
-              />
-              <div style={{padding:12}}>
-                <h3 style={{margin:"0 0 6px", fontSize:18}}>{p.name}</h3>
-                <div style={{fontWeight:700}}>€{Number(p.price).toFixed(2)}</div>
+      <div
+        style={{
+          display: "grid",
+          gridTemplateColumns: "repeat(auto-fill, minmax(260px, 1fr))",
+          gap: 24,
+        }}
+      >
+        {featured.map(p => {
+          const img =
+      const { bg, border, shadow } = cardColorsFor(p.slug, p.name);
+            (p as any).image_url ||
+            `${API_ORIGIN}/api/static/products/${p.slug}.jpg`
+
+          return (
+            <Link
+              key={p.id}
+              to={`/product/${p.slug}`}
+              style={{
+                border: `1px solid ${border}`,
+                borderRadius: 12,
+                overflow: "hidden",
+                textDecoration: "none",
+                color: "inherit",
+                boxShadow: `0 6px 18px ${shadow}, 0 1px 2px rgba(0,0,0,.03)`,
+                background: bg,
+              }}
+            >
+              <div
+                style={{
+                  width: "100%",
+                  aspectRatio: "16/10",
+                  overflow: "hidden",
+                  background: "transparent",
+                }}
+              >
+                <img
+                  src={img}
+                  alt={p.name}
+                  style={{
+                    width: "100%",
+                    height: "100%",
+                    objectFit: "cover",
+                    display: "block",
+                  }}
+                  loading="lazy"
+                />
               </div>
-            </article>
-          </Link>
-        ))}
+
+              <div style={{ padding: "12px 14px 16px" }}>
+                <h3
+                  style={{
+                    fontSize: 20,
+                    fontWeight: 700,
+                    margin: 0,
+                    lineHeight: 1.25,
+                  }}
+                >
+                  {p.name}
+                </h3>
+                {/* Precio oculto en Home a propósito */}
+              </div>
+            </Link>
+          )
+        })}
       </div>
-    </main>
-  );
+
+      {/* --- Sobre nosotros (debajo del grid) --- */}
+      <section
+        aria-labelledby="about-title"
+        style={{ maxWidth: 960, margin: "48px auto 0", padding: "0 16px" }}
+      >
+        <h2 id="about-title" style={{ fontSize: "1.5rem", marginBottom: 8 }}>
+          Sobre nosotros
+        </h2>
+
+        {/* Este párrafo se oculta cuando el desplegable está abierto */}
+        {!aboutOpen && (
+          <p style={{ lineHeight: 1.65, color: "#374151", marginBottom: 8 }}>
+            En Senda Suds hacemos jabones artesanales con recetas simples, efectivas y
+            honestas. Usamos aceites y mantecas vegetales, esencias de origen responsable
+            y curado lento en pequeños lotes. Queremos un cuidado cotidiano que huela bien,
+            funcione de verdad y deje una huella ligera: sin plásticos, sin añadidos
+            innecesarios, y con fórmulas que respetan tu piel y el planeta.
+          </p>
+        )}
+
+        <details
+          open={aboutOpen}
+          onToggle={(e) => setAboutOpen((e.currentTarget as HTMLDetailsElement).open)}
+        >
+          <summary style={{ cursor: "pointer", userSelect: "none" }}>
+            {aboutOpen ? "-" : "+"}
+          </summary>
+          <div style={{ marginTop: 12, lineHeight: 1.65, color: "#4B5563" }}>
+            <p style={{ margin: 0, marginBottom: 12 }}>
+              Senda Suds nace de una idea sencilla: volver a lo esencial. Queríamos
+              jabones que cuidaran la piel sin listas interminables de ingredientes y
+              que, además, respetaran el entorno. Por eso trabajamos en lotes pequeños,
+              con procesos artesanales y fórmulas pensadas para el día a día.
+            </p>
+            <p style={{ margin: 0, marginBottom: 12 }}>
+              Seleccionamos aceites y mantecas de alta calidad (oliva, coco, karité,
+              almendra), arcillas y extractos botánicos; evitamos colorantes agresivos y
+              añadidos innecesarios. El curado lento asegura barras duraderas, espuma
+              cremosa y suavidad real en la piel.
+            </p>
+            <p style={{ margin: 0 }}>
+              Nuestros compromisos: zero plastic en el empaquetado, ingredientes
+              mayoritariamente vegetales, proveedores locales cuando es posible y
+              transparencia total. Si tu piel es sensible, mixta o seca, aquí encontrarás
+              tu “senda” diaria: limpieza, hidratación y bienestar sin complicaciones.
+            </p>
+          </div>
+        </details>
+      </section>
+    </div>
+  )
 }
