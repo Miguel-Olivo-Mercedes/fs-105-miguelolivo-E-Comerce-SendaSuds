@@ -17,8 +17,14 @@ export default function Profile() {
     e.preventDefault()
     setMsg(null); setError(null)
     try {
-      await updateMe({ name, email, current_password: current_password || undefined, new_password: new_password || undefined })
-      setMsg('Perfil actualizado'); setCurrentPassword(''); setNewPassword('')
+      await updateMe({
+        name,
+        email,
+        current_password: current_password || undefined,
+        new_password: new_password || undefined
+      })
+      setMsg('Perfil actualizado')
+      setCurrentPassword(''); setNewPassword('')
     } catch (e: any) {
       setError(e?.response?.data?.msg || 'Error al actualizar')
     }
@@ -31,24 +37,78 @@ export default function Profile() {
     }
   }
 
+  // estilos minimalistas (igual patrón que login/registro)
+  const wrapStyle: React.CSSProperties = {
+    minHeight: 'calc(100vh - 180px)',
+    display: 'grid',
+    placeItems: 'center',
+    padding: '24px 16px'
+  }
+  const cardStyle: React.CSSProperties = {
+    width: '100%',
+    maxWidth: 480,
+    background: '#fff',
+    border: '1px solid #eee',
+    borderRadius: 12,
+    boxShadow: '0 1px 3px rgba(0,0,0,0.06)',
+    padding: 24
+  }
+  const formStyle: React.CSSProperties = { display: 'grid', gap: 12 }
+  const labelStyle: React.CSSProperties = { display: 'grid', gap: 6, fontSize: 14 }
+  const inputStyle: React.CSSProperties = {
+    padding: '10px 12px',
+    border: '1px solid #ddd',
+    borderRadius: 8,
+    outline: 'none'
+  }
+
   return (
-    <div>
-      <h2>Mi perfil</h2>
-      <form onSubmit={onSubmit} style={{ display: 'grid', gap: 8, maxWidth: 420 }}>
-        <label>Nombre <input value={name} onChange={e => setName(e.target.value)} /></label>
-        <label>Email <input value={email} onChange={e => setEmail(e.target.value)} /></label>
-        <details>
-          <summary>Cambiar contraseña</summary>
-          <input placeholder="Contraseña actual" type="password" value={current_password} onChange={e => setCurrentPassword(e.target.value)} />
-          <input placeholder="Nueva contraseña (min 6)" type="password" value={new_password} onChange={e => setNewPassword(e.target.value)} />
-        </details>
-        {msg && <p style={{ color: 'green' }}>{msg}</p>}
-        {error && <p style={{ color: 'crimson' }}>{error}</p>}
-        <div style={{ display: 'flex', gap: 8 }}>
-          <button>Guardar cambios</button>
-          <button type="button" onClick={onDelete} style={{ background: '#eee' }}>Eliminar cuenta</button>
-        </div>
-      </form>
+    <div style={wrapStyle}>
+      <div style={cardStyle}>
+        <h2 style={{ margin: '0 0 12px' }}>Mi perfil</h2>
+
+        <form onSubmit={onSubmit} style={formStyle}>
+          <label style={labelStyle}>
+            Nombre
+            <input style={inputStyle} value={name} onChange={e => setName(e.target.value)} />
+          </label>
+
+          <label style={labelStyle}>
+            Email
+            <input style={inputStyle} value={email} onChange={e => setEmail(e.target.value)} />
+          </label>
+
+          <details>
+            <summary>Cambiar contraseña</summary>
+            <div style={{ display: 'grid', gap: 8, marginTop: 8 }}>
+              <input
+                style={inputStyle}
+                placeholder="Contraseña actual"
+                type="password"
+                value={current_password}
+                onChange={e => setCurrentPassword(e.target.value)}
+              />
+              <input
+                style={inputStyle}
+                placeholder="Nueva contraseña (min 6)"
+                type="password"
+                value={new_password}
+                onChange={e => setNewPassword(e.target.value)}
+              />
+            </div>
+          </details>
+
+          {msg && <p style={{ color: 'green', margin: 0 }}>{msg}</p>}
+          {error && <p style={{ color: 'crimson', margin: 0 }}>{error}</p>}
+
+          <div style={{ display: 'flex', gap: 8, marginTop: 4 }}>
+            <button>Guardar cambios</button>
+            <button type="button" onClick={onDelete} style={{ background: '#eee' }}>
+              Eliminar cuenta
+            </button>
+          </div>
+        </form>
+      </div>
     </div>
   )
 }
