@@ -112,14 +112,52 @@ export default function Cart() {
 
         <div style={{ marginTop: 32 }}>
           <div style={{ fontSize: 14, letterSpacing: 2, color: "#333", marginBottom: 12 }}>FORMAS DE PAGO</div>
-          <PaymentIcons />
+          <div style={{ display: "flex", gap: 16, alignItems: "center" }}>
+            <VisaIcon />
+            <MastercardIcon />
+            <PaypalIcon />
+          </div>
         </div>
       </div>
     </div>
   )
 }
 
+/* ====== Iconos SVG (inline) ====== */
 
+function VisaIcon({ width = 64, height = 36 }: { width?: number; height?: number }) {
+  return (
+    <svg width={width} height={height} viewBox="0 0 64 36" aria-label="Visa" role="img">
+      <title>Visa</title>
+      <rect width="64" height="36" rx="6" fill="#1A1F71" />
+      <rect x="0" y="28" width="64" height="8" fill="#F7B600" />
+      <text x="10" y="23" fill="#fff" fontSize="16" fontWeight="700" fontFamily="system-ui, -apple-system, Segoe UI, Roboto, sans-serif">VISA</text>
+    </svg>
+  )
+}
+
+function MastercardIcon({ width = 64, height = 36 }: { width?: number; height?: number }) {
+  return (
+    <svg width={width} height={height} viewBox="0 0 64 36" aria-label="Mastercard" role="img">
+      <title>Mastercard</title>
+      <rect width="64" height="36" rx="6" fill="#fff" stroke="#ddd" />
+      <circle cx="26" cy="18" r="10" fill="#EB001B" />
+      <circle cx="38" cy="18" r="10" fill="#F79E1B" />
+      <rect x="30" y="9" width="4" height="18" fill="#FF5F00" />
+    </svg>
+  )
+}
+
+function PaypalIcon({ width = 64, height = 36 }: { width?: number; height?: number }) {
+  return (
+    <svg width={width} height={height} viewBox="0 0 64 36" aria-label="PayPal" role="img">
+      <title>PayPal</title>
+      <rect width="64" height="36" rx="6" fill="#fff" stroke="#ddd" />
+      <path d="M22 10h10c5 0 8 3 6 8-1 4-4 6-9 6h-6l-1 5h-5l4-19z" fill="#003087" />
+      <path d="M30 10h8c4 0 6 2 5 6-1 4-3 6-7 6h-7l1-5h5c2 0 3-1 4-3 .5-2-.3-4-3-4h-6l0-0z" fill="#009CDE" />
+    </svg>
+  )
+}
 
 /* ====== Estilos en JS ====== */
 

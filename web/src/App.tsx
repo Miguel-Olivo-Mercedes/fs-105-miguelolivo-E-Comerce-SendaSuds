@@ -7,6 +7,7 @@ import Register from "./pages/Register"
 import Profile from "./pages/Profile"
 import ProductDetail from "./pages/ProductDetail"
 import Header from "./components/Header"
+import Footer from "./components/Footer"
 import { useAuth } from "./context/AuthContext"
 
 function RequireAuth({ children }: { children: JSX.Element }) {
@@ -29,6 +30,7 @@ export default function App() {
         <Route path="/profile" element={<RequireAuth><Profile /></RequireAuth>} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
+      <Footer />
     </>
   )
 }

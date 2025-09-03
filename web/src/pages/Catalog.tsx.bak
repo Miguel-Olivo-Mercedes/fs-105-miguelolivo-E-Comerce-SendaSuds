@@ -1,0 +1,47 @@
+import { Link } from "react-router-dom"
+import { useProducts } from "../context/ProductsContext"
+import { useCart } from "../context/CartContext"
+import { API_ORIGIN } from "../api"
+import "../styles.css"
+
+export default function Catalog() {
+  const { products, loading, error } = useProducts()
+  const { add } = useCart()
+
+  if (loading) return <div style={{ padding: 24 }}>Cargando…</div>
+  if (error)   return <div style={{ padding: 24, color: "crimson" }}>Error: {String(error)}</div>
+
+  return (
+    <div style={{ padding: 24, maxWidth: 1280, margin: "0 auto" }}>
+      <h1 style={{ margin: "0 0 16px" }}>Catálogo</h1>
+      <div className="catalog-grid">
+        {products.map(p => (
+          <div key={p.id} className="catalog-card">
+            <Link to={`/product/${p.slug}`} style={{ textDecoration: "none", color: "inherit" }}>
+              <img
+                className="catalog-img"
+                src={`${API_ORIGIN}${p.image}`}
+                alt={p.name}
+                loading="lazy"
+              />
+              <h3 className="catalog-title">{p.name}</h3>
+            </Link>
+
+            <div className="catalog-actions">
+              <button
+                className="catalog-add"
+                onClick={() => add(p.id, 1)}
+                aria-label={`Añadir ${p.name} al carrito`}
+              >
+                Añadir al carrito
+              </button>
+              <Link to={`/product/${p.slug}`} style={{ alignSelf: "center" }}>
+                Ver
+              </Link>
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  )
+}

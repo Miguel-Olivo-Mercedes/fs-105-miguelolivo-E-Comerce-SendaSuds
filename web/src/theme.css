@@ -1,0 +1,36 @@
+:root{
+  /* Base pastel inspirada en tus imágenes */
+  --sand-50:   #F7F1E6; /* arena suave */
+  --peach-100: #F2D3C2; /* terracota pastel */
+  --amber-100: #FBE8BD; /* sol suave */
+  --sage-100:  #DDEBDC; /* salvia claro */
+  --sage-200:  #CFE3CF; /* salvia medio */
+  --teal-100:  #C9E9E5; /* teal suave */
+  --mist-100:  #EAF6F6; /* niebla turquesa */
+  --border-soft:#EAE6DE;
+
+  /* Tokens de fondo (puedes cambiarlos luego sin tocar componentes) */
+  --bg-page:    var(--sand-50);
+  --bg-section: linear-gradient(180deg, var(--sand-50) 0%, var(--sage-100) 100%);
+  --bg-alt:     linear-gradient(180deg, var(--mist-100) 0%, var(--teal-100) 100%);
+  --bg-card:    #FFFFFF; /* mantenemos tarjetas blancas por ahora */
+}
+
+/* Aplicación global SOLO a fondos del contenedor */
+html, body, #root { height: 100%; }
+body{ background: var(--bg-page); }
+
+/* Utilidades de fondo para secciones/containers (sin tocar textos ni botones) */
+.bg-section     { background: var(--bg-section); }
+.bg-alt         { background: var(--bg-alt); }
+.bg-sand        { background: var(--sand-50); }
+.bg-peach       { background: var(--peach-100); }
+.bg-sage        { background: var(--sage-100); }
+.bg-sage-strong { background: var(--sage-200); }
+.bg-teal        { background: var(--teal-100); }
+.bg-mist        { background: var(--mist-100); }
+
+/* Opcional: borde suave para contenedores amplios (no botones) */
+.container-soft { border: 1px solid var(--border-soft); border-radius: 12px; background-clip: padding-box; }
+
+/* No tocamos botones ni tipografías ni el footer (tu footer ya va inline en negro) */

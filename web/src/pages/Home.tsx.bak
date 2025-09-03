@@ -1,0 +1,49 @@
+import { Link } from "react-router-dom";
+import { useProducts } from "../context/ProductsContext";
+import { API_ORIGIN } from "../api";
+
+export default function Home() {
+  const { products, loading, error } = useProducts();
+
+  // Slugs destacados
+  const featuredSlugs = ["carbon-activo","citrico-amanecer","menta-alpina","rosa-mosqueta"];
+  const featured = products.filter(p => featuredSlugs.includes(p.slug)).slice(0, 4);
+
+  if (loading) return <main style={{padding:24}}>Cargando…</main>;
+  if (error)   return <main style={{padding:24, color:"crimson"}}>Error: {String(error)}</main>;
+
+  return (
+    <main style={{maxWidth:1100, margin:"0 auto", padding:"24px 16px"}}>
+      <header style={{display:"flex", justifyContent:"space-between", alignItems:"center"}}>
+        <div>
+        </div>
+        <Link to="/catalog" style={{textDecoration:"none", padding:"10px 14px", border:"1px solid #ddd", borderRadius:12}}>
+          Ver catálogo →
+        </Link>
+      </header>
+
+      <h2 style={{margin:"24px 0 12px"}}>Destacados</h2>
+      <div style={{
+        display:"grid",
+        gridTemplateColumns:"repeat(4, 1fr)",
+        gap:16
+      }}>
+        {featured.map(p => (
+          <Link key={p.id} to={`/product/${p.slug}`} style={{textDecoration:"none", color:"inherit"}}>
+            <article style={{border:"1px solid #eee", borderRadius:12, overflow:"hidden"}}>
+              <img
+                src={`${API_ORIGIN}${p.image}`}
+                alt={p.name}
+                style={{width:"100%", height:180, objectFit:"cover"}}
+              />
+              <div style={{padding:12}}>
+                <h3 style={{margin:"0 0 6px", fontSize:18}}>{p.name}</h3>
+                <div style={{fontWeight:700}}>€{Number(p.price).toFixed(2)}</div>
+              </div>
+            </article>
+          </Link>
+        ))}
+      </div>
+    </main>
+  );
+}
