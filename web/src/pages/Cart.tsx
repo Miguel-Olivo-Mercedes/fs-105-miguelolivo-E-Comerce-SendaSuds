@@ -25,7 +25,8 @@ export default function Cart() {
 
     // Fallback con add/removeQty si existen
     if (typeof cart.add === "function") {
-      const current = items.find((l: any) => l?.product?.id === id)?.qty || 0;
+      const current =
+        items.find((l: any) => l?.product?.id === id)?.qty || 0;
       const diff = qty - current;
       if (diff > 0) return cart.add(id, diff);
       if (diff < 0 && typeof cart.removeQty === "function")
@@ -74,14 +75,17 @@ export default function Cart() {
 
     // Usuario autenticado
     try {
-      const res = await fetch(import.meta.env.VITE_API_BASE + "/checkout/session", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({ success_url, cancel_url }),
-      });
+      const res = await fetch(
+        import.meta.env.VITE_API_BASE + "/checkout/session",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({ success_url, cancel_url }),
+        }
+      );
       const data = await res.json();
       if (data?.url) {
         window.location.href = data.url;
@@ -95,6 +99,25 @@ export default function Cart() {
 
   if (loading) return <div style={{ padding: 24 }}>Cargando carrito…</div>;
 
+  // Estilos reutilizables
+  const summaryBadge: React.CSSProperties = {
+    display: "inline-block",
+    background: "var(--peachSoft, rgba(255,184,150,.16))",
+    border: "1px solid rgba(255,184,150,.35)",
+    borderRadius: 10,
+    padding: "6px 12px",
+    margin: "0 0 12px",
+  };
+
+  const totalRight: React.CSSProperties = {
+    marginTop: 12,
+    paddingTop: 12,
+    borderTop: "1px solid #eee",
+    textAlign: "right",
+    fontWeight: 700,
+    color: "#8a8a8a", // gris pastel
+  };
+
   return (
     <div
       style={{
@@ -106,12 +129,17 @@ export default function Cart() {
         gap: 40,
       }}
     >
+      {/* Columna izquierda: listado (sin TOTAL abajo ya) */}
       <div>
         <h1 style={{ fontSize: 48, margin: "8px 0 24px" }}>Carrito</h1>
 
         {items.length === 0 ? (
           <>
-            <p style={{ fontWeight: 600 }}>TOTAL (0 Productos) 0,00 €</p>
+            {/* Título con fondo armonizado */}
+            <div style={summaryBadge}>
+              <h2 style={{ margin: 0, fontSize: 20 }}>Resumen del pedido</h2>
+            </div>
+
             <p style={{ color: "#555" }}>No hay más artículos en su carrito</p>
 
             <Link
@@ -140,20 +168,15 @@ export default function Cart() {
                 <Link to="/register" style={{ textDecoration: "underline" }}>
                   Crear cuenta
                 </Link>{" "}
-                o{" "}
-                <Link to="/login" style={{ textDecoration: "underline" }}>
-                  Iniciar sesión
-                </Link>
-                .
               </div>
             </div>
           </>
         ) : (
           <>
-            <p style={{ fontWeight: 600 }}>
-              TOTAL ({totalQty} {totalQty === 1 ? "Producto" : "Productos"}){" "}
-              {subtotal.toFixed(2)} €
-            </p>
+            {/* Título con fondo armonizado */}
+            <div style={summaryBadge}>
+              <h2 style={{ margin: 0, fontSize: 20 }}>Resumen del pedido</h2>
+            </div>
 
             <div style={{ marginTop: 12, display: "grid", gap: 16 }}>
               {items.map((line: any) => (
@@ -250,10 +273,8 @@ export default function Cart() {
         )}
       </div>
 
+      {/* Columna derecha: botón + TOTAL en gris pastel + ayuda + pagos */}
       <div>
-        <h2 style={{ fontSize: 28, marginTop: 8, marginBottom: 16 }}>
-          Resumen del pedido
-        </h2>
         <button
           disabled={items.length === 0}
           onClick={handleCheckout}
@@ -270,9 +291,21 @@ export default function Cart() {
           Tramitar Pedido
         </button>
 
+    {/* TOTAL centrado justo bajo el botón */}
+    <div style={totalCenter}>
+      TOTAL ({totalQty} {totalQty === 1 ? "Producto" : "Productos"}) {subtotal.toFixed(2)} €
+    </div>
+
         <div style={{ marginTop: 32 }}>
           <h3 style={{ fontSize: 20, marginBottom: 8 }}>¿Necesitas ayuda?</h3>
-          <ul style={{ listStyle: "none", padding: 0, color: "#666", lineHeight: 1.9 }}>
+          <ul
+            style={{
+              listStyle: "none",
+              padding: 0,
+              color: "#666",
+              lineHeight: 1.9,
+            }}
+          >
             <li>¿Cuándo llegará mi pedido?</li>
             <li>¿Puedo devolver mi pedido?</li>
             <li>¿Necesito una cuenta para hacer pedidos?</li>
@@ -280,7 +313,14 @@ export default function Cart() {
         </div>
 
         <div style={{ marginTop: 32 }}>
-          <div style={{ fontSize: 14, letterSpacing: 2, color: "#333", marginBottom: 12 }}>
+          <div
+            style={{
+              fontSize: 14,
+              letterSpacing: 2,
+              color: "#333",
+              marginBottom: 12,
+            }}
+          >
             FORMAS DE PAGO
           </div>
           <PaymentIcons />
@@ -302,6 +342,14 @@ const qtyBtn: React.CSSProperties = {
   lineHeight: "26px",
   textAlign: "center",
   fontSize: 16,
+};
+
+
+const totalCenter: React.CSSProperties = {
+  marginTop: 8,
+  textAlign: "center",
+  fontWeight: 700,
+  color: "#8a8a8a", // gris pastel
 };
 
 const promoBox: React.CSSProperties = {
