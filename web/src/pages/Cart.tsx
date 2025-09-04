@@ -1,3 +1,4 @@
+import React from "react";
 import PaymentIcons from "../components/PaymentIcons";
 import { Link, useNavigate } from "react-router-dom";
 import { useCart } from "../context/CartContext";
@@ -24,8 +25,7 @@ export default function Cart() {
 
     // Fallback con add/removeQty si existen
     if (typeof cart.add === "function") {
-      const current =
-        items.find((l: any) => l?.product?.id === id)?.qty || 0;
+      const current = items.find((l: any) => l?.product?.id === id)?.qty || 0;
       const diff = qty - current;
       if (diff > 0) return cart.add(id, diff);
       if (diff < 0 && typeof cart.removeQty === "function")
@@ -35,11 +35,62 @@ export default function Cart() {
 
   const handleCheckout = async () => {
     if (!totalQty) return;
+
+    const success_url =
+      window.location.origin + "/success?session_id={CHECKOUT_SESSION_ID}";
+    const cancel_url = window.location.origin + "/cart";
+
     if (!token) {
-      navigate("/login", { state: { next: "/cart" } });
+      // Invitado: creamos sesión con items del carrito
+      const payload = {
+        items: (items || []).map((l: any) => ({
+          product_id: l?.product?.id,
+          qty: l?.qty || 0,
+        })),
+        success_url,
+        cancel_url,
+      };
+
+      try {
+        const res = await fetch(
+          import.meta.env.VITE_API_BASE + "/checkout/session_guest",
+          {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(payload),
+          }
+        );
+        const data = await res.json();
+        if (data?.url) {
+          window.location.href = data.url;
+        } else {
+          alert(data?.msg || "No se pudo iniciar el checkout invitado");
+        }
+      } catch {
+        alert("Error de red en checkout invitado");
+      }
       return;
     }
-    alert("Checkout de ejemplo: conecta con tu /api/checkout cuando quieras.");
+
+    // Usuario autenticado
+    try {
+      const res = await fetch(import.meta.env.VITE_API_BASE + "/checkout/session", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ success_url, cancel_url }),
+      });
+      const data = await res.json();
+      if (data?.url) {
+        window.location.href = data.url;
+      } else {
+        alert(data?.msg || "No se pudo iniciar el checkout");
+      }
+    } catch {
+      alert("Error de red en checkout");
+    }
   };
 
   if (loading) return <div style={{ padding: 24 }}>Cargando carrito…</div>;

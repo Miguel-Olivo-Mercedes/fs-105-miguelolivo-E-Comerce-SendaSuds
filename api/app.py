@@ -268,6 +268,68 @@ def create_app():
         root = os.path.join(app.root_path, 'static', 'products')
         return send_from_directory(root, filename)
 
+    # ---------- CHECKOUT invitado (sin JWT) ----------
+    @app.post('/api/checkout/session_guest')
+    def create_checkout_session_guest():
+        # Requiere STRIPE_SECRET_KEY configurada (modo test vale)
+        if not stripe.api_key:
+            return jsonify(msg='Stripe no configurado'), 500
+
+        data = request.get_json(silent=True) or {}
+        items_in = data.get('items') or []
+        if not isinstance(items_in, list) or not items_in:
+            return jsonify(msg='items requerido (lista de {product_id, qty})'), 400
+
+        # URLs de retorno
+        success_url = data.get('success_url') or f"{FRONTEND_URL}/success?session_id={{CHECKOUT_SESSION_ID}}"
+        cancel_url  = data.get('cancel_url')  or f"{FRONTEND_URL}/cart"
+
+        # Origen absoluto para imágenes
+        origin = PUBLIC_API_ORIGIN or (request.host_url.rstrip('/'))
+
+        line_items = []
+        for it in items_in:
+            try:
+                pid = int(it.get('product_id'))
+                qty = int(it.get('qty') or 1)
+            except Exception:
+                return jsonify(msg='product_id/qty inválidos'), 400
+            if qty < 1:
+                return jsonify(msg='qty debe ser >= 1'), 400
+
+            p = Product.query.get(pid)
+            if not p:
+                return jsonify(msg=f'Producto {pid} no existe'), 404
+
+            price_cents = int(Decimal(str(p.price)) * 100)
+            image_abs = f"{origin}{p.image}" if p.image and p.image.startswith('/api/') else None
+
+            li = {
+                "quantity": qty,
+                "price_data": {
+                    "currency": "chf",
+                    "unit_amount": price_cents,
+                    "product_data": { "name": p.name }
+                }
+            }
+            if image_abs:
+                li["price_data"]["product_data"]["images"] = [image_abs]
+            line_items.append(li)
+
+        try:
+            session = stripe.checkout.Session.create(
+                mode="payment",
+                line_items=line_items,
+                success_url=success_url,
+                cancel_url=cancel_url,
+                allow_promotion_codes=True,
+                billing_address_collection="auto"
+            )
+            return jsonify(url=session.url)
+        except Exception as e:
+            return jsonify(msg=str(e)), 500
+
+
     return app
 
 app = create_app()
