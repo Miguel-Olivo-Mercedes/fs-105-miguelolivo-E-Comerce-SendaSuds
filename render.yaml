@@ -1,6 +1,3 @@
-databases:
-  - name: postgresql-trapezoidal-42170   # <-- la que Render ya te creó
-
 services:
   - type: web
     name: senda-api
@@ -8,27 +5,26 @@ services:
     rootDir: api
     plan: free
     autoDeploy: true
-    buildCommand: |
-      pip install -r requirements.txt
-    startCommand: |
-      gunicorn app:app --workers=2 --bind 0.0.0.0:$PORT
+    buildCommand: pip install -r requirements.txt
+    startCommand: gunicorn app:app --workers=2 --bind 0.0.0.0:$PORT
     envVars:
       - key: DATABASE_URL
         fromDatabase:
-          name: postgresql-trapezoidal-42170
+          name: postgresql-trapezoidal-42170   # usa la DB que ya tienes creada
           property: connectionString
       - key: JWT_SECRET_KEY
         generateValue: true
-      - key: STRIPE_SECRET_KEY
-        sync: false        # la pondrás en el panel de Render
-      - key: PUBLIC_API_ORIGIN
-        value: ""          # lo rellenaremos tras el 1er deploy con la URL pública de la API
-      - key: FRONTEND_URL
-        value: ""          # lo rellenaremos cuando despleguemos el front
-    postdeployCommand: |
-      python - <<'PY'
-      from app import app
-      from flask_migrate import upgrade
-      with app.app_context():
-          upgrade()
-      PY
+      # Estas dos las pondrás luego en el panel (Settings -> Environment)
+      # - key: STRIPE_SECRET_KEY
+      #   value: sk_test_xxx
+      # - key: PUBLIC_API_ORIGIN
+      #   value: https://senda-api-xxxx.onrender.com
+      # - key: FRONTEND_URL
+      #   value: https://senda-web-xxxx.onrender.com
+    postdeployCommand: >
+      python -c "from app import app; 
+                 from flask_migrate import upgrade; 
+                 app.app_context().push(); 
+                 upgrade()"
+databases:
+  - name: postgresql-trapezoidal-42170
