@@ -2,29 +2,29 @@ services:
   - type: web
     name: senda-api
     env: python
-    rootDir: api
+    rootDir: .                   # <- en la raíz para ver 'migrations/'
     plan: free
     autoDeploy: true
-    buildCommand: pip install -r requirements.txt
-    startCommand: gunicorn app:app --workers=2 --bind 0.0.0.0:$PORT
+    buildCommand: pip install -r api/requirements.txt
+    startCommand: gunicorn api.app:app --workers=2 --bind 0.0.0.0:$PORT
     envVars:
       - key: DATABASE_URL
         fromDatabase:
-          name: postgresql-trapezoidal-42170   # usa la DB que ya tienes creada
+          name: postgresql-trapezoidal-42170
           property: connectionString
       - key: JWT_SECRET_KEY
         generateValue: true
-      # Estas dos las pondrás luego en el panel (Settings -> Environment)
+      # Estas tres ponlas luego en Settings -> Environment del servicio:
       # - key: STRIPE_SECRET_KEY
-      #   value: sk_test_xxx
+      #   value: sk_test_...
       # - key: PUBLIC_API_ORIGIN
-      #   value: https://senda-api-xxxx.onrender.com
+      #   value: https://<tu-servicio>.onrender.com
       # - key: FRONTEND_URL
-      #   value: https://senda-web-xxxx.onrender.com
+      #   value: https://<tu-frontend>.onrender.com
     postdeployCommand: >
-      python -c "from app import app; 
-                 from flask_migrate import upgrade; 
-                 app.app_context().push(); 
+      python -c "from api.app import app;
+                 from flask_migrate import upgrade;
+                 app.app_context().push();
                  upgrade()"
 databases:
   - name: postgresql-trapezoidal-42170
