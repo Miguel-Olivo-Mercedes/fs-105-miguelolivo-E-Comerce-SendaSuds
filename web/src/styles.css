@@ -1,11 +1,22 @@
-/* Contenedor centrado y con padding para que no quede pegado al borde */
+/* =========================
+   Contenedor centrado + safe-area (iPhone notch)
+   ========================= */
 .container {
   max-width: 1200px;
   margin: 0 auto;
-  padding: 0 22px;            /* ← ajusta separación al borde derecho */
+
+  /* Fallback */
+  padding-left: 22px;
+  padding-right: 22px;
+
+  /* Respeta el notch cuando existe (si el navegador no soporta env(), ignora esta línea y usa el fallback) */
+  padding-left: max(22px, env(safe-area-inset-left));
+  padding-right: max(22px, env(safe-area-inset-right));
 }
 
-/* Header */
+/* =========================
+   Header
+   ========================= */
 .site-header {
   position: sticky;
   top: 0;
@@ -13,6 +24,7 @@
   background: #fff;
   border-bottom: 1px solid #eee;
 }
+
 .header-bar {
   display: flex;
   align-items: center;
@@ -30,15 +42,15 @@
 
 /* Bloque derecho del header */
 .nav-right {
-  margin-left: auto;          /* empuja todo a la derecha */
+  margin-left: auto; /* empuja todo a la derecha */
   display: flex;
   align-items: center;
-  gap: 18px;                  /* separación entre botones */
+  gap: 18px; /* separación entre botones */
 }
 
 /* Enlaces */
 .link {
-  color: #596074;             /* gris tenue */
+  color: #596074; /* gris tenue */
   text-decoration: none;
   font-weight: 600;
 }
@@ -53,7 +65,8 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  height: 40px; width: 40px;
+  height: 40px;
+  width: 40px;
   border-radius: 999px;
   border: 1px solid transparent;
   background: transparent;
@@ -64,7 +77,8 @@
 /* Badge del carrito */
 .badge {
   position: absolute;
-  top: -2px; right: -2px;
+  top: -2px;
+  right: -2px;
   font-size: 11px;
   padding: 0 6px;
   line-height: 18px;
@@ -78,7 +92,8 @@
 .dropdown-wrap { position: relative; }
 .dropdown {
   position: absolute;
-  right: 0; top: 46px;
+  right: 0;
+  top: 46px;
   background: #fff;
   border: 1px solid #e5e7eb;
   border-radius: 10px;
@@ -86,7 +101,8 @@
   min-width: 180px;
   box-shadow: 0 10px 20px rgba(0,0,0,.08);
 }
-.dropdown a, .dropdown button {
+.dropdown a,
+.dropdown button {
   display: block;
   width: 100%;
   text-align: left;
@@ -98,94 +114,86 @@
   border-radius: 8px;
   cursor: pointer;
 }
-.dropdown a:hover, .dropdown button:hover { background: #f3f4f6; }
+.dropdown a:hover,
+.dropdown button:hover { background: #f3f4f6; }
 
-/* --- Catálogo: 2 filas x 4 columnas --- */
-.catalog-grid{
-  display:grid;
+/* =========================
+   Catálogo
+   ========================= */
+.catalog-grid {
+  display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 24px;
   align-items: stretch;
 }
 
-.catalog-card{
-  background:#fff;
-  border:1px solid #eee;
-  border-radius:12px;
-  padding:12px;
-  display:flex;
-  flex-direction:column;
+.catalog-card {
+  background: #fff;
+  border: 1px solid #eee;
+  border-radius: 12px;
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
 }
 
-.catalog-img{
-  width:100%;
-  height:200px;
-  object-fit:cover;
-  border-radius:10px;
+.catalog-img {
+  width: 100%;
+  height: 200px;
+  object-fit: cover;
+  border-radius: 10px;
 }
 
-.catalog-title{
-  margin:12px 0 8px;
-  font-size:16px;
-  line-height:1.2;
+.catalog-title {
+  margin: 12px 0 8px;
+  font-size: 16px;
+  line-height: 1.2;
 }
 
-.catalog-actions{
-  margin-top:auto;
-  display:flex;
-  gap:8px;
-}
-.catalog-add{
-  padding:10px 12px;
-  border:1px solid #0ea5e9;
-  background:#E6F6FD;
-  border-radius:8px;
-  cursor:pointer;
+/* Acciones del card */
+.catalog-actions {
+  margin-top: auto;
+  display: flex;
+  align-items: center;
+  gap: 8px;
 }
 
-/* --- Acciones del card --- */
-.catalog-actions{
-  margin-top:auto;
-  display:flex;
-  align-items:center;
-  gap:8px;
+/* Botón favorito (corazón) */
+.catalog-fav {
+  border: none;
+  background: transparent;
+  font-size: 20px;
+  line-height: 1;
+  cursor: pointer;
+  opacity: .8;
 }
 
-/* botón favorito (corazón) */
-  border:none;
-  background:transparent;
-  font-size:20px;
-  line-height:1;
-  cursor:pointer;
-  opacity:.8;
+/* Botón cobre a la derecha */
+.catalog-add {
+  margin-left: auto; /* empuja a la derecha */
+  padding: 10px 12px;
+  border: 1px solid #B87333;
+  background: #B87333; /* cobre */
+  color: #fff;
+  border-radius: 8px;
+  cursor: pointer;
 }
+.catalog-add:hover { filter: brightness(.95); }
 
-/* botón cobre a la derecha */
-.catalog-add{
-  margin-left:auto;              /* empuja a la derecha */
-  padding:10px 12px;
-  border:1px solid #B87333;
-  background:#B87333;            /* cobre */
-  color:#fff;
-  border-radius:8px;
-  cursor:pointer;
-}
-.catalog-add:hover{
-  filter:brightness(.95);
-}
-
-/* --- Sticky footer + full-bleed safe --- */
+/* =========================
+   Layout base + sticky footer
+   ========================= */
 html, body, #root { height: 100%; margin: 0; padding: 0; }
-body { overflow-x: hidden; }     /* evita scroll horizontal por el 100vw del footer */
+body { overflow-x: hidden; } /* evita scroll horizontal por el 100vw del footer */
 
 #root {
-  min-height: 100vh;             /* ocupa todo el alto de la ventana */
+  min-height: 100vh; /* ocupa todo el alto de la ventana */
   display: flex;
   flex-direction: column;
 }
 
 /* Empuja el <footer> hacia abajo cuando el contenido es corto */
 #root > footer { margin-top: auto; }
+
 /* Marca: icono + texto alineados */
 .brand {
   display: inline-flex;
@@ -197,7 +205,7 @@ body { overflow-x: hidden; }     /* evita scroll horizontal por el 100vw del foo
 
 /* tamaño del sello en el header */
 .brand-logo {
-  width: 65px; 
+  width: 65px;
   height: 65px;
   display: block;
 }
@@ -206,4 +214,445 @@ body { overflow-x: hidden; }     /* evita scroll horizontal por el 100vw del foo
 .brand-text {
   letter-spacing: .04em;
   font-weight: 700; /* iguala con el resto del header si lo usas bold */
+}
+
+/* Footer (fondo a ancho completo; contenido dentro de .container) */
+.site-footer {
+  background: #fff;
+  border-top: 1px solid #eee;
+  padding: 24px 0;
+}
+
+/* =========================
+   Helpers / Layouts
+   ========================= */
+.two-col {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 24px;
+}
+.cart-grid {
+  display: grid;
+  grid-template-columns: 1fr 380px;
+  gap: 40px;
+}
+.full-width-sm { width: 100%; }
+
+/* =========================
+   Breakpoints (mobile-first)
+   ========================= */
+
+/* Tablet grande */
+@media (max-width: 1024px) {
+  .container {
+    /* Fallback */
+    padding-left: 18px;
+    padding-right: 18px;
+
+    /* Safe-area en tablet con notch */
+    padding-left: max(18px, env(safe-area-inset-left));
+    padding-right: max(18px, env(safe-area-inset-right));
+  }
+
+  .catalog-grid { grid-template-columns: repeat(3, minmax(0,1fr)); }
+}
+
+/* Tablet / móvil en horizontal "normal" */
+@media (max-width: 900px) {
+  .two-col { grid-template-columns: 1fr; }
+  .cart-grid { grid-template-columns: 1fr; gap: 24px; }
+  .catalog-grid { grid-template-columns: repeat(2, minmax(0,1fr)); }
+}
+
+/* Móvil (regla general) */
+@media (max-width: 600px) {
+  .container {
+    /* Fallback */
+    padding-left: 14px;
+    padding-right: 14px;
+
+    /* Safe-area en móviles con notch */
+    padding-left: max(14px, env(safe-area-inset-left));
+    padding-right: max(14px, env(safe-area-inset-right));
+  }
+
+  .catalog-grid { grid-template-columns: 1fr; }
+  .catalog-img { height: 180px; }
+
+  /* Acciones de tarjeta: apila y que el CTA ocupe todo */
+  .catalog-actions {
+    flex-wrap: wrap;
+    gap: 10px;
+  }
+  .catalog-add {
+    margin-left: 0;
+    width: 100%;
+    text-align: center;
+  }
+}
+
+/* =========================
+   Portrait (móvil en vertical) — intenta 2 columnas si cabe
+   ========================= */
+/* Colocado DESPUÉS del bloque móvil anterior para que tenga prioridad cuando proceda */
+@media (orientation: portrait) and (max-width: 600px) {
+  /* Si hay ancho suficiente (≈≥360–400 px), 2 columnas; si no cabe, el navegador puede seguir usando 1 por falta de espacio */
+  .catalog-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .catalog-img { height: 170px; }
+}
+
+/* Extra estrecho: fuerza 1 columna (p. ej. ≤360px) */
+@media (max-width: 360px) {
+  .catalog-grid { grid-template-columns: 1fr; }
+}
+
+/* =========================
+   Landscape muy bajo (p. ej. iPhone apaisado)
+   ========================= */
+@media (orientation: landscape) and (max-height: 480px) {
+  .header-bar { height: 56px; }
+  .brand-logo { width: 48px; height: 48px; }
+  .nav-right { gap: 12px; }
+
+  .container {
+    /* un poco menos de padding lateral en altura baja */
+    padding-left: max(12px, env(safe-area-inset-left));
+    padding-right: max(12px, env(safe-area-inset-right));
+  }
+
+  .catalog-img { height: 140px; }
+  .two-col { grid-template-columns: 1fr 1fr; gap: 16px; }
+  .cart-grid { grid-template-columns: 1fr 320px; gap: 24px; }
+}
+/* =========================
+   Catálogo — versión ajustada
+   ========================= */
+
+/* (opcional) añade esta clase al <main> del catálogo para un padding vertical limpio */
+.catalog-page {
+  padding-block: 16px 40px;
+}
+
+.catalog-grid {
+  display: grid;
+  /* columnas fluidas que se adaptan al ancho disponible */
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 20px;
+  align-items: stretch; /* todas las cards a la misma altura visual */
+}
+
+/* Tarjeta: layout en columna, altura coherente y overflow controlado */
+.catalog-card {
+  background: #fff;
+  border: 1px solid #eee;
+  border-radius: 12px;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  min-height: 340px; /* asegura espacio para título + desc + CTA */
+}
+
+/* Media con relación de aspecto estable (mejor que height fija) */
+.catalog-img {
+  width: 100%;
+  aspect-ratio: 4 / 3;
+  object-fit: cover;
+  display: block;
+}
+
+/* Cuerpo de la card */
+.catalog-body {
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+/* Título: 2 líneas máx. para evitar saltos bruscos */
+.catalog-title {
+  margin: 4px 0 2px;
+  font-size: 16px;
+  line-height: 1.25;
+  font-weight: 600;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;        /* clamp a 2 líneas */
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  min-height: 40px;             /* reserva espacio estable */
+}
+
+/* Descripción corta: 2 líneas y tono secundario */
+.catalog-desc {
+  color: #555;
+  font-size: 14px;
+  line-height: 1.45;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  min-height: 40px;
+}
+
+/* Precio destacado */
+.catalog-price {
+  font-weight: 700;
+  margin-top: 4px;
+}
+
+/* Fila de acciones pegada al fondo de la card */
+.catalog-actions,
+.catalog-cta-row {
+  margin-top: auto;             /* empuja CTA al final */
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* Botón favorito (corazón) */
+.catalog-fav {
+  border: none;
+  background: transparent;
+  font-size: 20px;
+  line-height: 1;
+  cursor: pointer;
+  opacity: .8;
+}
+
+/* CTA “Añadir” en cobre */
+.catalog-add {
+  margin-left: auto;
+  padding: 10px 12px;
+  border: 1px solid #B87333;
+  background: #B87333;
+  color: #fff;
+  border-radius: 8px;
+  cursor: pointer;
+}
+.catalog-add:hover { filter: brightness(.95); }
+
+/* ===== Breakpoints específicos para el catálogo ===== */
+
+/* ≤ 1024px: tarjetas un poco más compactas */
+@media (max-width: 1024px) {
+  .catalog-grid {
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 18px;
+  }
+}
+
+/* ≤ 900px: 2–3 columnas fluidas según ancho */
+@media (max-width: 900px) {
+  .catalog-grid {
+    grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  }
+}
+
+/* Móvil general */
+@media (max-width: 600px) {
+  .catalog-grid {
+    /* intenta 2 columnas si el ancho lo permite, si no cae a 1 */
+    grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+    gap: 14px;
+  }
+  .catalog-img { aspect-ratio: 3 / 2; }
+  .catalog-add {
+    /* en tarjetas estrechas, que el CTA pueda ocupar todo el ancho */
+    min-width: 44%;
+    text-align: center;
+  }
+}
+
+/* Extra estrecho (≤360px): fuerza 1 columna para no aplastar el contenido */
+@media (max-width: 360px) {
+  .catalog-grid { grid-template-columns: 1fr; }
+}
+/* ===== Fix catálogo en móvil (vertical) ===== */
+
+/* Evita que las cards se “estrangulen” dentro del grid */
+.catalog-card { min-width: 0; }
+
+/* Móvil vertical “normal” (iPhone/Android ~375–430px): 2 columnas sí o sí */
+@media (max-width: 600px) {
+  .catalog-grid {
+    grid-template-columns: repeat(2, 1fr) !important;
+    gap: 14px;
+  }
+  /* Imagen más cuadrada para que no se vea “tira” vertical */
+  .catalog-img { aspect-ratio: 1 / 1; }
+}
+
+/* Móvil muy estrecho (≤ 360px): 1 columna para no aplastar el contenido */
+@media (max-width: 360px) {
+  .catalog-grid {
+    grid-template-columns: 1fr !important;
+  }
+}
+/* ====== Product Detail (fluido y responsive) ====== */
+
+.product-detail { align-items: start; gap: 24px; }
+
+/* Imagen: grande en desktop, fluida en móvil */
+.product-img {
+  width: 100%;
+  height: 420px;
+  object-fit: cover;
+  border-radius: 12px;
+}
+
+/* Título/subtítulo con escalado fluido */
+.product-title {
+  margin: 0 0 8px;
+  line-height: 1.05;
+  font-weight: 800;
+  font-size: clamp(28px, 6vw, 56px);
+}
+.product-sub {
+  margin: 0 0 16px;
+  color: #606060;
+  font-size: clamp(16px, 2.8vw, 20px);
+}
+
+/* Bloques de info */
+.product-meta {
+  margin: 0;
+  line-height: 1.7;
+}
+.product-meta dt {
+  font-weight: 700;
+  margin-top: 12px;
+}
+.product-meta dd {
+  margin: 0 0 10px;
+}
+
+/* Precio + CTA */
+.price-row {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-top: 18px;
+  flex-wrap: wrap;
+}
+.price-row .price {
+  font-weight: 800;
+  font-size: 28px;
+  margin-right: auto;
+}
+.add-btn {
+  padding: 12px 16px;
+  border-radius: 10px;
+  border: 1px solid #ddd;
+  background: #fff;
+  cursor: pointer;
+  font-weight: 600;
+}
+
+/* ====== Ajustes móviles ====== */
+@media (max-width: 900px) {
+  /* la rejilla .two-col ya se apila en tu CSS, solo afinamos tamaños */
+  .product-detail { gap: 16px; }
+
+  .product-img {
+    height: auto;
+    aspect-ratio: 4 / 3;   /* imagen más “natural” en vertical */
+  }
+
+  .price-row { gap: 12px; }
+  .price-row .price { font-size: 24px; }
+  .add-btn { flex: 1; }    /* el botón puede ocupar todo el ancho disponible */
+}
+
+/* Móvil pequeño */
+@media (max-width: 360px) {
+  .product-img { aspect-ratio: 1 / 1; }  /* cuadrada si la pantalla es muy estrecha */
+}
+/* ==== Catalog image: de rectángulo a cuadrada en móvil ==== */
+/* Por defecto (desktop): proporción 4:3 */
+.catalog-img {
+  width: 100%;
+  height: auto;            /* quitamos altura fija */
+  aspect-ratio: 4 / 3;     /* forma base */
+  object-fit: cover;
+  border-radius: 10px;
+}
+
+/* Tablet: un poco más ancha */
+@media (max-width: 1024px) {
+  .catalog-img { aspect-ratio: 3 / 2; }
+}
+
+/* Móvil (vertical): cuadrada */
+@media (max-width: 600px) {
+  .catalog-img { aspect-ratio: 1 / 1; }
+}
+/* ===== Product Detail: imagen responsiva con aspect-ratio ===== */
+.product-hero-img {
+  width: 100%;
+  aspect-ratio: 4 / 3;   /* Desktop: 4:3 */
+  object-fit: cover;
+  border-radius: 12px;
+}
+
+/* Móvil: cuadrada */
+@media (max-width: 600px) {
+  .product-hero-img {
+    aspect-ratio: 1 / 1;
+  }
+}
+/* ===== Catálogo: imagen más cuadrada por defecto ===== */
+.catalog-img{
+  width:100%;
+  object-fit:cover;
+  border-radius:10px;
+  aspect-ratio: 4 / 3;     /* desktop/tablet grande */
+}
+
+/* Que la tarjeta no crezca en exceso y recorte bien */
+.catalog-card{
+  display:flex;
+  flex-direction:column;
+  overflow:hidden;
+}
+
+/* ===== Ajustes responsive para móvil ===== */
+@media (max-width: 900px){
+  /* En móviles y tablets pequeñas, imágenes cuadradas */
+  .catalog-img{ aspect-ratio: 1 / 1; }
+
+  /* Cards más compactas */
+  .catalog-card{
+    padding:10px;
+    border-radius:10px;
+    gap:10px;
+  }
+
+  .catalog-title{
+    margin:10px 0 6px;
+    font-size:15px;
+    line-height:1.15;
+  }
+
+  .catalog-actions{
+    gap:8px;
+    flex-wrap:wrap;
+  }
+
+  .catalog-add{
+    padding:10px;
+    min-height:40px;
+    font-size:14px;
+    width:100%;          /* CTA ocupa todo el ancho */
+    margin-left:0;       /* no la empujes a la derecha en móvil */
+  }
+
+  /* Menos separación entre cards */
+  .catalog-grid{ gap:16px; }
+}
+
+/* Mantén 2 columnas en móviles anchos; 1 columna en muy estrechos */
+@media (max-width: 600px){
+  .catalog-grid{ grid-template-columns: repeat(2, minmax(0,1fr)); }
+}
+@media (max-width: 480px){
+  .catalog-grid{ grid-template-columns: 1fr; }
 }
