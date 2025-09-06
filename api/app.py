@@ -1,6 +1,6 @@
 import os, re
 from decimal import Decimal
-from flask import Flask, jsonify, request, send_from_directory
+from flask import Flask, jsonify, request, send_from_directory, current_app
 from flask_cors import CORS
 from flask_migrate import Migrate
 from flask_jwt_extended import JWTManager, create_access_token, jwt_required, get_jwt_identity
@@ -15,23 +15,74 @@ EMAIL_RE = re.compile(r"^[^\s@]+@[^\s@]+\.[^\s@]+$")
 def create_app():
     app = Flask(__name__)
 
+    # --- Config DB ---
     database_url = os.getenv('DATABASE_URL', 'sqlite:///local.db')
     if database_url.startswith('postgres://'):
         database_url = database_url.replace('postgres://', 'postgresql://', 1)
-
     app.config['SQLALCHEMY_DATABASE_URI'] = database_url
     app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
-    app.config['JWT_SECRET_KEY'] = os.getenv('JWT_SECRET_KEY', 'dev-change-me')
 
+    # --- Auth / CORS ---
+    app.config['JWT_SECRET_KEY'] = os.getenv('JWT_SECRET_KEY', 'dev-change-me')
     CORS(app, resources={r"/api/*": {"origins": "*"}}, supports_credentials=False)
+
+    # --- Extensiones ---
     db.init_app(app)
     Migrate(app, db)
     JWTManager(app)
 
+    # --- Stripe / URLs ---
     stripe.api_key = os.getenv('STRIPE_SECRET_KEY')
     PUBLIC_API_ORIGIN = os.getenv('PUBLIC_API_ORIGIN')
     FRONTEND_URL = os.getenv('FRONTEND_URL', 'http://localhost:5173')
 
+    # --- Crear tablas + seed al arrancar ---
+    def init_db():
+        with app.app_context():
+            try:
+                db.create_all()
+                app.logger.info("[init] db.create_all OK")
+
+                default_products = [
+                    {"name":"Cítrico Amanecer","slug":"citrico-amanecer","price":Decimal("8.90"),"short_description":"Aroma cítrico y fresco","image":None},
+                    {"name":"Menta Alpina","slug":"menta-alpina","price":Decimal("8.90"),"short_description":"Refrescante menta","image":None},
+                    {"name":"Rosa Mosqueta","slug":"rosa-mosqueta","price":Decimal("9.50"),"short_description":"Toque floral suave","image":None},
+                    {"name":"Coco Tropical","slug":"coco-tropical","price":Decimal("8.90"),"short_description":"Dulce aroma a coco","image":None},
+                    {"name":"Avena y Miel","slug":"avena-y-miel","price":Decimal("8.90"),"short_description":"Suave para la piel","image":None},
+                    {"name":"Lavanda Serena","slug":"lavanda-serena","price":Decimal("8.90"),"short_description":"Relajante lavanda","image":None},
+                    {"name":"Bosque Fresco","slug":"bosque-fresco","price":Decimal("8.90"),"short_description":"Notas verdes y madera","image":None},
+                    {"name":"Carbón Activo","slug":"carbon-activo","price":Decimal("9.20"),"short_description":"Limpieza profunda","image":None},
+                ]
+                creados = 0
+                for d in default_products:
+                    if not Product.query.filter_by(slug=d["slug"]).first():
+                        db.session.add(Product(**d)); creados += 1
+                if creados:
+                    db.session.commit()
+                    app.logger.info(f"[init] seed: creados {creados} productos")
+                else:
+                    app.logger.info("[init] seed: ya existían")
+
+                # Backfill de imágenes si existen archivos en api/static/products
+                try:
+                    img_dir = os.path.join(app.root_path, 'static', 'products')
+                    if os.path.isdir(img_dir):
+                        files = {os.path.splitext(fn)[0] for fn in os.listdir(img_dir)}
+                        updates = 0
+                        for p in Product.query.all():
+                            if not p.image and p.slug in files:
+                                p.image = f"/api/static/products/{p.slug}.jpg"
+                                updates += 1
+                        if updates:
+                            db.session.commit()
+                            app.logger.info(f"[init] backfill images: {updates} filas actualizadas")
+                except Exception as e:
+                    app.logger.warning(f"[init] backfill images omitido: {e}")
+            except Exception:
+                app.logger.exception("[init] FALLÓ init_db (tablas/seed)")
+    init_db()
+
+    # ---------- Health ----------
     @app.get('/api/health')
     def health():
         return jsonify(status='ok')
@@ -63,7 +114,7 @@ def create_app():
         user = User.query.filter_by(email=email).first()
         if not user or not check_password_hash(user.password_hash, password):
             return jsonify(msg='Credenciales inválidas'), 401
-        token = create_access_token(identity=str(user.id))  # sub como string
+        token = create_access_token(identity=str(user.id))
         return jsonify(access_token=token, name=user.name or '', email=user.email)
 
     # ---------- PERFIL ----------
@@ -80,14 +131,12 @@ def create_app():
         uid = int(get_jwt_identity())
         u = User.query.get_or_404(uid)
         data = request.get_json() or {}
-
         name = data.get('name', u.name)
         email = (data.get('email') or u.email).strip().lower()
         if not EMAIL_RE.match(email):
             return jsonify(msg='Email inválido'), 400
         if email != u.email and User.query.filter_by(email=email).first():
             return jsonify(msg='Ese email ya está en uso'), 409
-
         current_password = data.get('current_password')
         new_password = data.get('new_password')
         if new_password:
@@ -96,7 +145,6 @@ def create_app():
             if len(new_password) < 6:
                 return jsonify(msg='La nueva contraseña debe tener al menos 6 caracteres'), 400
             u.password_hash = generate_password_hash(new_password)
-
         u.name = name; u.email = email
         db.session.commit()
         return jsonify(msg='Perfil actualizado')
@@ -113,21 +161,27 @@ def create_app():
     # ---------- PRODUCTOS ----------
     @app.get('/api/products')
     def list_products():
-        products = Product.query.order_by(Product.id.asc()).all()
-        def to_dict(p):
-            return {
-                'id': p.id, 'name': p.name, 'slug': p.slug,
-                'price': float(p.price), 'short_description': p.short_description,
-                'usage': p.usage, 'warnings': p.warnings, 'image': p.image,
-            }
-        return jsonify([to_dict(p) for p in products])
+        try:
+            products = Product.query.order_by(Product.id.asc()).all()
+            def to_dict(p):
+                return {
+                    'id': p.id, 'name': p.name, 'slug': p.slug,
+                    'price': float(p.price) if p.price is not None else None,
+                    'short_description': p.short_description,
+                    'usage': p.usage, 'warnings': p.warnings, 'image': p.image,
+                }
+            return jsonify([to_dict(p) for p in products])
+        except Exception as e:
+            current_app.logger.exception("Error en /api/products")
+            return jsonify(error=str(e)), 500
 
     @app.get('/api/products/<slug>')
     def get_product(slug):
         p = Product.query.filter_by(slug=slug).first_or_404()
         return jsonify({
             'id': p.id, 'name': p.name, 'slug': p.slug,
-            'price': float(p.price), 'short_description': p.short_description,
+            'price': float(p.price) if p.price is not None else None,
+            'short_description': p.short_description,
             'usage': p.usage, 'warnings': p.warnings, 'image': p.image,
         })
 
@@ -219,14 +273,11 @@ def create_app():
         stripe.api_key = os.getenv('STRIPE_SECRET_KEY')
         if not stripe.api_key:
             return jsonify(msg='Stripe no configurado'), 500
-
         uid = int(get_jwt_identity())
         items = CartItem.query.filter_by(user_id=uid).all()
         if not items:
             return jsonify(msg='Carrito vacío'), 400
-
         origin = PUBLIC_API_ORIGIN or (request.host_url.rstrip('/'))
-
         line_items = []
         for ci in items:
             p = Product.query.get(ci.product_id)
@@ -244,11 +295,9 @@ def create_app():
             if image_abs:
                 li["price_data"]["product_data"]["images"] = [image_abs]
             line_items.append(li)
-
         payload = request.get_json() or {}
         success_url = payload.get('success_url') or f"{FRONTEND_URL}/success?session_id={{CHECKOUT_SESSION_ID}}"
         cancel_url  = payload.get('cancel_url')  or f"{FRONTEND_URL}/cart"
-
         try:
             session = stripe.checkout.Session.create(
                 mode="payment",
@@ -271,39 +320,28 @@ def create_app():
     # ---------- CHECKOUT invitado (sin JWT) ----------
     @app.post('/api/checkout/session_guest')
     def create_checkout_session_guest():
-        # Requiere STRIPE_SECRET_KEY configurada (modo test vale)
         if not stripe.api_key:
             return jsonify(msg='Stripe no configurado'), 500
-
         data = request.get_json(silent=True) or {}
         items_in = data.get('items') or []
         if not isinstance(items_in, list) or not items_in:
             return jsonify(msg='items requerido (lista de {product_id, qty})'), 400
-
-        # URLs de retorno
         success_url = data.get('success_url') or f"{FRONTEND_URL}/success?session_id={{CHECKOUT_SESSION_ID}}"
         cancel_url  = data.get('cancel_url')  or f"{FRONTEND_URL}/cart"
-
-        # Origen absoluto para imágenes
         origin = PUBLIC_API_ORIGIN or (request.host_url.rstrip('/'))
-
         line_items = []
         for it in items_in:
             try:
-                pid = int(it.get('product_id'))
-                qty = int(it.get('qty') or 1)
+                pid = int(it.get('product_id')); qty = int(it.get('qty') or 1)
             except Exception:
                 return jsonify(msg='product_id/qty inválidos'), 400
             if qty < 1:
                 return jsonify(msg='qty debe ser >= 1'), 400
-
             p = Product.query.get(pid)
             if not p:
                 return jsonify(msg=f'Producto {pid} no existe'), 404
-
             price_cents = int(Decimal(str(p.price)) * 100)
             image_abs = f"{origin}{p.image}" if p.image and p.image.startswith('/api/') else None
-
             li = {
                 "quantity": qty,
                 "price_data": {
@@ -315,7 +353,6 @@ def create_app():
             if image_abs:
                 li["price_data"]["product_data"]["images"] = [image_abs]
             line_items.append(li)
-
         try:
             session = stripe.checkout.Session.create(
                 mode="payment",
@@ -328,7 +365,6 @@ def create_app():
             return jsonify(url=session.url)
         except Exception as e:
             return jsonify(msg=str(e)), 500
-
 
     return app
 
