@@ -43,15 +43,40 @@ def create_app():
                 db.create_all()
                 app.logger.info("[init] db.create_all OK")
 
+                generic_usage = (
+                  "Humedece las manos, frota el jabón hasta hacer espuma y aplica sobre la piel. "
+                  "Enjuaga con agua tibia. Evita el contacto con los ojos."
+                )
+                generic_warnings = (
+                  "Sólo para uso externo. Suspende su uso en caso de irritación. "
+                  "Mantener fuera del alcance de los niños."
+                )
+
                 default_products = [
-                    {"name":"Cítrico Amanecer","slug":"citrico-amanecer","price":Decimal("8.90"),"short_description":"Aroma cítrico y fresco","image":None},
-                    {"name":"Menta Alpina","slug":"menta-alpina","price":Decimal("8.90"),"short_description":"Refrescante menta","image":None},
-                    {"name":"Rosa Mosqueta","slug":"rosa-mosqueta","price":Decimal("9.50"),"short_description":"Toque floral suave","image":None},
-                    {"name":"Coco Tropical","slug":"coco-tropical","price":Decimal("8.90"),"short_description":"Dulce aroma a coco","image":None},
-                    {"name":"Avena y Miel","slug":"avena-y-miel","price":Decimal("8.90"),"short_description":"Suave para la piel","image":None},
-                    {"name":"Lavanda Serena","slug":"lavanda-serena","price":Decimal("8.90"),"short_description":"Relajante lavanda","image":None},
-                    {"name":"Bosque Fresco","slug":"bosque-fresco","price":Decimal("8.90"),"short_description":"Notas verdes y madera","image":None},
-                    {"name":"Carbón Activo","slug":"carbon-activo","price":Decimal("9.20"),"short_description":"Limpieza profunda","image":None},
+                    {"name":"Cítrico Amanecer","slug":"citrico-amanecer","price":Decimal("8.90"),
+                     "short_description":"Aroma cítrico y fresco","image":None,
+                     "usage":generic_usage,"warnings":generic_warnings},
+                    {"name":"Menta Alpina","slug":"menta-alpina","price":Decimal("8.90"),
+                     "short_description":"Refrescante menta","image":None,
+                     "usage":generic_usage,"warnings":generic_warnings},
+                    {"name":"Rosa Mosqueta","slug":"rosa-mosqueta","price":Decimal("9.50"),
+                     "short_description":"Toque floral suave","image":None,
+                     "usage":generic_usage,"warnings":generic_warnings},
+                    {"name":"Coco Tropical","slug":"coco-tropical","price":Decimal("8.90"),
+                     "short_description":"Dulce aroma a coco","image":None,
+                     "usage":generic_usage,"warnings":generic_warnings},
+                    {"name":"Avena y Miel","slug":"avena-y-miel","price":Decimal("8.90"),
+                     "short_description":"Suave para la piel","image":None,
+                     "usage":generic_usage,"warnings":generic_warnings},
+                    {"name":"Lavanda Serena","slug":"lavanda-serena","price":Decimal("8.90"),
+                     "short_description":"Relajante lavanda","image":None,
+                     "usage":generic_usage,"warnings":generic_warnings},
+                    {"name":"Bosque Fresco","slug":"bosque-fresco","price":Decimal("8.90"),
+                     "short_description":"Notas verdes y madera","image":None,
+                     "usage":generic_usage,"warnings":generic_warnings},
+                    {"name":"Carbón Activo","slug":"carbon-activo","price":Decimal("9.20"),
+                     "short_description":"Limpieza profunda","image":None,
+                     "usage":generic_usage,"warnings":generic_warnings},
                 ]
                 creados = 0
                 for d in default_products:
@@ -63,7 +88,7 @@ def create_app():
                 else:
                     app.logger.info("[init] seed: ya existían")
 
-                # Backfill de imágenes si existen archivos en api/static/products
+                # Backfill imágenes (si falta image pero existe archivo)
                 try:
                     img_dir = os.path.join(app.root_path, 'static', 'products')
                     if os.path.isdir(img_dir):
@@ -75,9 +100,23 @@ def create_app():
                                 updates += 1
                         if updates:
                             db.session.commit()
-                            app.logger.info(f"[init] backfill images: {updates} filas actualizadas")
+                            app.logger.info(f"[init] backfill images: {updates} filas")
                 except Exception as e:
                     app.logger.warning(f"[init] backfill images omitido: {e}")
+
+                # Backfill usage/warnings (sólo si están vacíos)
+                updates = 0
+                for p in Product.query.all():
+                    if not p.usage:
+                        p.usage = generic_usage; updates += 1
+                    if not p.warnings:
+                        p.warnings = generic_warnings; updates += 1
+                if updates:
+                    db.session.commit()
+                    app.logger.info(f"[init] backfill usage/warnings: {updates} campos")
+                else:
+                    app.logger.info("[init] backfill usage/warnings: nada que actualizar")
+
             except Exception:
                 app.logger.exception("[init] FALLÓ init_db (tablas/seed)")
     init_db()
@@ -221,8 +260,7 @@ def create_app():
     def cart_add():
         uid = int(get_jwt_identity())
         data = request.get_json() or {}
-        product_id = data.get('product_id')
-        qty = int(data.get('qty') or 1)
+        product_id = data.get('product_id'); qty = int(data.get('qty') or 1)
         if not product_id: return jsonify(msg='product_id requerido'), 400
         if qty < 1: return jsonify(msg='qty debe ser >= 1'), 400
         p = Product.query.get(product_id)
