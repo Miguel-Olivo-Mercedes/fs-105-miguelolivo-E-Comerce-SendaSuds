@@ -3,18 +3,15 @@ import { api } from '../api'
 import { useAuth } from './AuthContext'
 import type { Product } from '../types'
 
-export type CartLine = {
-  product: Product
-  qty: number
-}
+export type CartLine = { product: Product; qty: number }
 
 type CartState = {
   items: CartLine[]
   subtotal: number
   totalQty: number
   loading: boolean
-  add: (productId: number, qty: number) => Promise<void>           // incrementa qty (delta)
-  update: (productId: number, qty: number) => Promise<void>        // setea qty absoluta
+  add: (productId: number, qty: number) => Promise<void>
+  update: (productId: number, qty: number) => Promise<void>
   remove: (productId: number) => Promise<void>
   clear: () => Promise<void>
   refresh: (opts?: { silent?: boolean }) => Promise<void>
@@ -41,6 +38,25 @@ function readGuestRaw(): GuestLine[] {
 }
 function writeGuestRaw(lines: GuestLine[]) {
   localStorage.setItem(GKEY, JSON.stringify(lines))
+}
+
+// Elimina cualquier rastro de carritos en storages (claves antiguas)
+function purgeLocalCartTraces() {
+  try {
+    localStorage.removeItem(GKEY)
+    const killers = ['cart', 'carrito', 'senda']
+    for (const k of Object.keys(localStorage)) {
+      const kk = k.toLowerCase()
+      if (killers.some(s => kk.includes(s))) localStorage.removeItem(k)
+    }
+  } catch {}
+  try {
+    const killers = ['cart', 'carrito', 'senda']
+    for (const k of Object.keys(sessionStorage)) {
+      const kk = k.toLowerCase()
+      if (killers.some(s => kk.includes(s))) sessionStorage.removeItem(k)
+    }
+  } catch {}
 }
 
 /* ------------------------------ CartProvider ------------------------------ */
@@ -75,7 +91,8 @@ export function CartProvider({ children }: { children: ReactNode }) {
           .map(r => {
             const p = map.get(r.product_id)
             if (!p) return null
-            return { product: p, qty: Math.max(0, Number(r.qty || 0)) }
+            const q = Math.max(0, Number(r.qty || 0))
+            return q > 0 ? { product: p, qty: q } : null
           })
           .filter(Boolean) as CartLine[]
         setItems(lines)
@@ -85,11 +102,13 @@ export function CartProvider({ children }: { children: ReactNode }) {
       // Autenticado: pedir al backend
       const { data } = await api.get('/cart', auth)
       const lines: CartLine[] = Array.isArray(data?.items)
-        ? data.items.map((it: any) => ({ product: it.product, qty: Number(it.qty || 0) }))
+        ? data.items
+            .map((it: any) => ({ product: it.product, qty: Math.max(0, Number(it.qty || 0)) }))
+            .filter((l: any) => l.qty > 0 && l.product)
         : []
       setItems(lines)
     } catch {
-      // silenciar
+      // silencioso
     } finally {
       if (!silent) setLoading(false)
     }
@@ -102,7 +121,6 @@ export function CartProvider({ children }: { children: ReactNode }) {
     if (delta === 0) return
 
     if (!token) {
-      // Invitado
       const raw = readGuestRaw()
       const idx = raw.findIndex(r => r.product_id === productId)
       if (idx >= 0) raw[idx].qty = Math.max(1, Number(raw[idx].qty || 0) + delta)
@@ -112,14 +130,13 @@ export function CartProvider({ children }: { children: ReactNode }) {
       return
     }
 
-    // Autenticado: POST /cart incrementa qty (UI optimista)
+    // Autenticado (optimista)
     const prev = items
     const next = [...items]
     const i = next.findIndex(l => l.product.id === productId)
     if (i >= 0) {
       next[i] = { ...next[i], qty: next[i].qty + delta }
     } else {
-      // si no está, recupera el producto para pintarlo optimista
       try {
         const prods = await loadProductsOnce()
         const p = prods.find(p => p.id === productId)
@@ -131,16 +148,15 @@ export function CartProvider({ children }: { children: ReactNode }) {
       await api.post('/cart', { product_id: productId, qty: delta }, auth)
       await refresh({ silent: true })
     } catch {
-      setItems(prev) // revertir si falla
+      setItems(prev)
     }
   }
 
-  // UPDATE: setea qty absoluta. Invitado -> localStorage. Autenticado -> PUT /cart/<item_id> (o POST si no existe)
+  // UPDATE: setea qty absoluta.
   const update = async (productId: number, qtyAbs: number) => {
     const qty = Math.max(0, Math.floor(Number(qtyAbs || 0)))
 
     if (!token) {
-      // Invitado
       const raw = readGuestRaw()
       const idx = raw.findIndex(r => r.product_id === productId)
       if (idx < 0 && qty > 0) raw.push({ product_id: productId, qty })
@@ -153,9 +169,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
       return
     }
 
-    // Autenticado
     try {
-      // Necesitamos item_id del backend para este productId
       const { data } = await api.get('/cart', auth)
       const item = (data?.items || []).find((it: any) => it?.product_id === productId)
 
@@ -164,22 +178,17 @@ export function CartProvider({ children }: { children: ReactNode }) {
       setItems(next) // optimista
 
       if (!item) {
-        if (qty > 0) {
-          // si no existía, POST con qty absoluta (delta = qty)
-          await api.post('/cart', { product_id: productId, qty }, auth)
-        }
+        if (qty > 0) await api.post('/cart', { product_id: productId, qty }, auth)
         await refresh({ silent: true })
         return
       }
 
-      if (qty <= 0) {
-        await api.delete(`/cart/${item.id}`, auth)
-      } else {
-        await api.put(`/cart/${item.id}`, { qty }, auth)
-      }
+      if (qty <= 0) await api.delete(`/cart/${item.id}`, auth)
+      else await api.put(`/cart/${item.id}`, { qty }, auth)
+
       await refresh({ silent: true })
     } catch {
-      await refresh({ silent: true }) // vuelve al estado de servidor si falla
+      await refresh({ silent: true })
     }
   }
 
@@ -199,16 +208,24 @@ export function CartProvider({ children }: { children: ReactNode }) {
     }
   }
 
+  // CLEAR: borra TODO (estado, storages, y servidor si hay token)
   const clear = async () => {
-    if (!token) {
-      writeGuestRaw([])
-      await refresh({ silent: true })
-      return
-    }
+    setLoading(true)
     try {
-      await api.delete('/cart', auth)
+      // 1) limpiar UI al instante
+      setItems([])
+
+      // 2) limpiar storages (incluidas claves antiguas)
+      purgeLocalCartTraces()
+
+      // 3) si hay sesión, limpiar también en servidor
+      if (token) {
+        await api.delete('/cart', auth)
+      }
+
+      // 4) no rehidratar nada
     } finally {
-      await refresh({ silent: true })
+      setLoading(false)
     }
   }
 

@@ -43,56 +43,16 @@ def create_app():
                 db.create_all()
                 app.logger.info("[init] db.create_all OK")
 
-                # 6 puntos de USO (más ricos)
-                generic_usage_points = [
-                    "Humedece el cuerpo y el jabón con agua tibia",
-                    "Frota el jabón en las manos o esponja hasta formar una espuma cremosa",
-                    "Aplica con movimientos circulares durante 20–30 segundos",
-                    "Enjuaga abundantemente; repite si lo necesitas",
-                    "Deja secar el jabón en jabonera con drenaje entre usos",
-                    "Apto para manos y cuerpo; evita el contacto con mucosas"
-                ]
-                generic_usage = "\n".join(f"• {x}" for x in generic_usage_points)
-
-                # 6 puntos de ADVERTENCIAS (más ricos)
-                generic_warnings_points = [
-                    "Sólo para uso externo",
-                    "Evita el contacto con los ojos; si ocurre, aclara con agua",
-                    "Suspende su uso ante irritación o enrojecimiento",
-                    "Mantener fuera del alcance de los niños",
-                    "No ingerir; en caso de ingesta, consulta con un profesional",
-                    "Conservar en lugar fresco y seco, lejos de calor y sol directo"
-                ]
-                generic_warnings = "\n".join(f"• {x}" for x in generic_warnings_points)
-
                 default_products = [
-                    {"name":"Cítrico Amanecer","slug":"citrico-amanecer","price":Decimal("8.90"),
-                     "short_description":"Aroma cítrico y fresco","image":None,
-                     "usage":generic_usage,"warnings":generic_warnings},
-                    {"name":"Menta Alpina","slug":"menta-alpina","price":Decimal("8.90"),
-                     "short_description":"Refrescante menta","image":None,
-                     "usage":generic_usage,"warnings":generic_warnings},
-                    {"name":"Rosa Mosqueta","slug":"rosa-mosqueta","price":Decimal("9.50"),
-                     "short_description":"Toque floral suave","image":None,
-                     "usage":generic_usage,"warnings":generic_warnings},
-                    {"name":"Coco Tropical","slug":"coco-tropical","price":Decimal("8.90"),
-                     "short_description":"Dulce aroma a coco","image":None,
-                     "usage":generic_usage,"warnings":generic_warnings},
-                    {"name":"Avena y Miel","slug":"avena-y-miel","price":Decimal("8.90"),
-                     "short_description":"Suave para la piel","image":None,
-                     "usage":generic_usage,"warnings":generic_warnings},
-                    {"name":"Lavanda Serena","slug":"lavanda-serena","price":Decimal("8.90"),
-                     "short_description":"Relajante lavanda","image":None,
-                     "usage":generic_usage,"warnings":generic_warnings},
-                    {"name":"Bosque Fresco","slug":"bosque-fresco","price":Decimal("8.90"),
-                     "short_description":"Notas verdes y madera","image":None,
-                     "usage":generic_usage,"warnings":generic_warnings},
-                    {"name":"Carbón Activo","slug":"carbon-activo","price":Decimal("9.20"),
-                     "short_description":"Limpieza profunda","image":None,
-                     "usage":generic_usage,"warnings":generic_warnings},
+                    {"name":"Cítrico Amanecer","slug":"citrico-amanecer","price":Decimal("8.90"),"short_description":"Aroma cítrico y fresco","image":None},
+                    {"name":"Menta Alpina","slug":"menta-alpina","price":Decimal("8.90"),"short_description":"Refrescante menta","image":None},
+                    {"name":"Rosa Mosqueta","slug":"rosa-mosqueta","price":Decimal("9.50"),"short_description":"Toque floral suave","image":None},
+                    {"name":"Coco Tropical","slug":"coco-tropical","price":Decimal("8.90"),"short_description":"Dulce aroma a coco","image":None},
+                    {"name":"Avena y Miel","slug":"avena-y-miel","price":Decimal("8.90"),"short_description":"Suave para la piel","image":None},
+                    {"name":"Lavanda Serena","slug":"lavanda-serena","price":Decimal("8.90"),"short_description":"Relajante lavanda","image":None},
+                    {"name":"Bosque Fresco","slug":"bosque-fresco","price":Decimal("8.90"),"short_description":"Notas verdes y madera","image":None},
+                    {"name":"Carbón Activo","slug":"carbon-activo","price":Decimal("9.20"),"short_description":"Limpieza profunda","image":None},
                 ]
-
-                # Crea si falta
                 creados = 0
                 for d in default_products:
                     if not Product.query.filter_by(slug=d["slug"]).first():
@@ -103,7 +63,7 @@ def create_app():
                 else:
                     app.logger.info("[init] seed: ya existían")
 
-                # Backfill imágenes (si falta image pero existe archivo)
+                # Backfill de imágenes si existen archivos en api/static/products
                 try:
                     img_dir = os.path.join(app.root_path, 'static', 'products')
                     if os.path.isdir(img_dir):
@@ -115,23 +75,9 @@ def create_app():
                                 updates += 1
                         if updates:
                             db.session.commit()
-                            app.logger.info(f"[init] backfill images: {updates} filas")
+                            app.logger.info(f"[init] backfill images: {updates} filas actualizadas")
                 except Exception as e:
                     app.logger.warning(f"[init] backfill images omitido: {e}")
-
-                # Backfill usage/warnings si están vacíos o con muy poca info (<3 viñetas)
-                did_updates = 0
-                for p in Product.query.all():
-                    if (not p.usage) or (p.usage.count("•") < 3):
-                        p.usage = generic_usage; did_updates += 1
-                    if (not p.warnings) or (p.warnings.count("•") < 3):
-                        p.warnings = generic_warnings; did_updates += 1
-                if did_updates:
-                    db.session.commit()
-                    app.logger.info(f"[init] backfill usage/warnings: {did_updates} campos actualizados")
-                else:
-                    app.logger.info("[init] backfill usage/warnings: nada que actualizar")
-
             except Exception:
                 app.logger.exception("[init] FALLÓ init_db (tablas/seed)")
     init_db()
@@ -275,7 +221,8 @@ def create_app():
     def cart_add():
         uid = int(get_jwt_identity())
         data = request.get_json() or {}
-        product_id = data.get('product_id'); qty = int(data.get('qty') or 1)
+        product_id = data.get('product_id')
+        qty = int(data.get('qty') or 1)
         if not product_id: return jsonify(msg='product_id requerido'), 400
         if qty < 1: return jsonify(msg='qty debe ser >= 1'), 400
         p = Product.query.get(product_id)
@@ -424,5 +371,4 @@ def create_app():
 app = create_app()
 
 if __name__ == '__main__':
-    # Útil en local
     app.run(host='0.0.0.0', port=5000, debug=True)

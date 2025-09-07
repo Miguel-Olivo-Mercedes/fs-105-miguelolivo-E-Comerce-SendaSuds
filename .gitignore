@@ -80,3 +80,12 @@ database.database
 database.db
 diagram.png
 __pycache__/
+
+# Local/dev
+api/instance/
+*.db
+.env
+web/dist/
+web/node_modules/
+api/__pycache__/
+web/tsconfig.tsbuildinfo
