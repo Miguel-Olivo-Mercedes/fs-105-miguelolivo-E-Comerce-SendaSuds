@@ -87,3 +87,6 @@ tsconfig.tsbuildinfo
 # Local dev env files
 .env.local
 src/front/.env.local
+
+# Backups
+*.bak
