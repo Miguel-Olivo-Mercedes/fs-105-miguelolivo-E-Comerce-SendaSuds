@@ -83,3 +83,7 @@ __pycache__/
 dist/
 .env.local
 tsconfig.tsbuildinfo
+
+# Local dev env files
+.env.local
+src/front/.env.local
