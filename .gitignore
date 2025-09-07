@@ -81,3 +81,5 @@ database.db
 diagram.png
 __pycache__/
 dist/
+.env.local
+tsconfig.tsbuildinfo
