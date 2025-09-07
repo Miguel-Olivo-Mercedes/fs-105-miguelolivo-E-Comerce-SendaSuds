@@ -1,0 +1,38 @@
+<svg width="240" height="240" viewBox="0 0 240 240" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="title desc">
+  <title id="title">Sello Senda Suds</title>
+  <desc id="desc">Sello circular con mariposa minimal y texto alrededor.</desc>
+  <style>
+    :root{
+      --c-copper:#B26B45; --c-ink:#111; --c-ink2:#4a4a4a;
+      --c-rose:#F5D8E5; --c-sage:#CFE4D0; --c-cream:#F9E7C1;
+    }
+    .ring{fill:none;stroke:var(--c-copper);vector-effect:non-scaling-stroke}
+    .ringSoft{fill:none;stroke:var(--c-cream);vector-effect:non-scaling-stroke}
+    .tick{stroke:var(--c-copper);stroke-width:2;stroke-linecap:round}
+    .title{font:700 22px/1 "Inter",system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif;fill:var(--c-ink);letter-spacing:.06em}
+    .text{font:600 12px/1 "Inter",system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif;fill:var(--c-ink2);letter-spacing:.22em}
+    .petalL{fill:var(--c-rose)} .petalR{fill:var(--c-sage)} .body{fill:var(--c-copper)}
+  </style>
+  <circle cx="120" cy="120" r="108" fill="#fff"/>
+  <circle class="ring" cx="120" cy="120" r="94" stroke-width="3"/>
+  <circle class="ringSoft" cx="120" cy="120" r="82" stroke-width="6" opacity=".5"/>
+  <circle class="ring" cx="120" cy="120" r="78" stroke-width="2"/>
+  <line class="tick" x1="120" y1="24"  x2="120" y2="30"/>
+  <line class="tick" x1="120" y1="210" x2="120" y2="204"/>
+  <line class="tick" x1="24"  y1="120" x2="30"  y2="120"/>
+  <line class="tick" x1="210" y1="120" x2="204" y2="120"/>
+  <g transform="translate(0,0)">
+    <ellipse cx="120" cy="124" rx="3.6" ry="3.6" fill="rgba(0,0,0,.06)"/>
+    <ellipse class="petalL" cx="108" cy="112" rx="18" ry="14" transform="rotate(-6 108 112)"/>
+    <ellipse class="petalR" cx="132" cy="112" rx="18" ry="14" transform="rotate(6 132 112)"/>
+    <circle class="body" cx="120" cy="114" r="3.6"/>
+    <path class="body" d="M120 97c-3 4-3 9 0 13c3-4 3-9 0-13z"/>
+    <path class="body" d="M118 96 q-6 -6 -10 -3" fill="none" stroke="#B26B45" stroke-width="1.5" stroke-linecap="round"/>
+    <path class="body" d="M122 96 q6 -6 10 -3"  fill="none" stroke="#B26B45" stroke-width="1.5" stroke-linecap="round"/>
+  </g>
+  <text class="title" x="120" y="148" text-anchor="middle">Senda Suds</text>
+  <defs><path id="curve" d="M120,120 m-86,0 a86,86 0 1,1 172,0 a86,86 0 1,1 -172,0"/></defs>
+  <text class="text">
+    <textPath href="#curve" startOffset="6%">JABONES · HECHO A MANO · CUIDADO NATURAL · DESDE 2025 · </textPath>
+  </text>
+</svg>
