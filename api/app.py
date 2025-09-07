@@ -15,6 +15,15 @@ EMAIL_RE = re.compile(r"^[^\s@]+@[^\s@]+\.[^\s@]+$")
 def create_app():
     app = Flask(__name__)
 
+    FRONT = os.getenv("FRONTEND_URL")
+    if not FRONT:
+        # Dev: permite front local/codespaces
+        FRONT = [
+            "http://localhost:3000",
+            "http://127.0.0.1:3000",
+            f"https://{os.getenv('CODESPACE_NAME','')}-3000.app.github.dev",
+        ]
+    CORS(app, resources={r"/api/*": {"origins": FRONT}}, supports_credentials=True)
     database_url = os.getenv('DATABASE_URL', 'sqlite:///local.db')
     if database_url.startswith('postgres://'):
         database_url = database_url.replace('postgres://', 'postgresql://', 1)
@@ -22,8 +31,6 @@ def create_app():
     app.config['SQLALCHEMY_DATABASE_URI'] = database_url
     app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
     app.config['JWT_SECRET_KEY'] = os.getenv('JWT_SECRET_KEY', 'dev-change-me')
-
-    CORS(app, resources={r"/api/*": {"origins": "*"}}, supports_credentials=False)
     db.init_app(app)
     Migrate(app, db)
     JWTManager(app)
